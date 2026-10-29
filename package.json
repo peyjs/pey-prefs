@@ -1,0 +1,34 @@
+{
+  "name": "pey.prefs",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "User preference persistence for the host application (theme, language, and similar UI keys) on top of the storage infrastructure service",
+  "exports": {
+    ".": "./index.js",
+    "./manifest.json": "./manifest.json",
+    "./lib/prefs-service.js": "./lib/prefs-service.js",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "files": [
+    "manifest.json",
+    "index.js",
+    "lib/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "docs"
+  ],
+  "keywords": [
+    "pey",
+    "preferences",
+    "settings",
+    "bonyan"
+  ],
+  "license": "MIT"
+}
