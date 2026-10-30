@@ -6,6 +6,7 @@ Feature plugin persisting the host application's user UI preferences (theme, lan
 
 ## Structure
 
+- `docs/requirements.md` — requirements; the construction source of truth.
 - `manifest.json` — plugin contract.
 - `index.js` — Bonyan two-phase entry point, including the `core:service-unavailable` subscription.
 - `lib/prefs-service.js` — the preference service.
@@ -18,4 +19,5 @@ Feature plugin persisting the host application's user UI preferences (theme, lan
 
 ## See Also
 
-See [docs/reference.md](docs/reference.md) for the full API, errors, config, business rules, and constraints.
+- [docs/requirements.md](docs/requirements.md) for the "what and why", written before the implementation.
+- [docs/reference.md](docs/reference.md) for the full API, errors, config, business rules, and constraints.
