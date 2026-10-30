@@ -1,5 +1,10 @@
 # pey.prefs
 
+[![AI](https://img.shields.io/badge/Built%20with-AI-blueviolet)](#)
+[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](#)
+[![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Bonyan Architecture](https://img.shields.io/badge/bonyan-0.11-56c3bf)](https://github.com/barnevis/bonyan)
+
 ## Purpose
 
 Feature plugin persisting the host application's user UI preferences (theme, language) on top of the storage infrastructure service.

@@ -1,6 +1,6 @@
 {
   "name": "pey.prefs",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "architecture": "0.11",
   "description": "User preference persistence for the host application (theme, language, and similar UI keys) on top of the storage infrastructure service.",
   "type": "feature",

@@ -1,20 +1,7 @@
 # Changelog
 
-All notable changes to `pey.prefs` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows the Bonyan architecture rules.
+## [1.0.0] - 2026-10-30
 
-## [0.1.1] - 2026-10-30
+Initial pey release: graceful user-preference persistence — `get(key)` / `set(key, value)` over `pey.storage.service` (configurable `collection`, default `prefs`); missing preferences read as null, failed writes report false, storage loss at runtime is reported as a critical error, and `docs/requirements.md` is the construction source of truth.
 
-### Added
-
-- `docs/requirements.md` — the requirements document, the construction source of truth for the plugin. No behavioral change.
-
-## [0.1.0] - 2026-10-29
-
-Initial pey release, derived from the `shirazeh.prefs` plugin (Shirazeh, 2026-10-26): renamed to `pey.prefs` / `pey.prefs.service` and generalized to the host application; no behavioral changes. The 0.x range marks a plugin whose contract may still change.
-
-### Added
-
-- `pey.prefs.service` with `get(key)` and `set(key, value)`: reads/writes `{ key, value }` records in the configured storage collection through `pey.storage.service`. Graceful degradation is the contract — a missing preference reads as null and a failed write returns false; storage problems reduce capability, never break the UI.
-- Required dependency on `pey.storage.service`; runtime loss reported as a critical error via `core:service-unavailable`.
-- Config key `collection` (`prefs`).
-- Unit tests with a fake storage service and the manifest contract test.
+> Derived from the `shirazeh.prefs` plugin (Shirazeh, incubated as 0.1.0): renamed to `pey.prefs` / `pey.prefs.service` and generalized to the host application. That history stays with the source project — the pey release lineage starts here.
