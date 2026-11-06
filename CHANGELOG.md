@@ -2,7 +2,7 @@
 
 ## [1.0.1] - 1405-08-15
 
-Review fix release: the `core:service-unavailable` subscription is now released on shutdown/deactivation (and on a repeated `prepare()`), so a dependency-loss event after shutdown can no longer report a critical error for a dead plugin; `config.collection` is type-checked (a non-string or empty value falls back to the `prefs` default); and the test suite gained coverage for non-string keys, a real shutdown-hook invocation, the configured collection end-to-end through `prepare()`, a single set→get round trip, an empty `bindDependencies` object, and a manifest↔lib lock on the storage service name.
+Review fix release: the `core:service-unavailable` subscription is now released on shutdown/deactivation (and on a repeated `prepare()`), so a dependency-loss event after shutdown can no longer report a critical error for a dead plugin; the lifecycle hooks tear down their own prepare call's resources, so a stale hook from an earlier context can never destroy a newer instance; `config.collection` is type-checked (a non-string or empty value falls back to the `prefs` default); the entry point and the storage library share one declared service-name constant; the stale version badge left the README; and the test suite gained coverage for non-string keys, a real shutdown-hook invocation, the configured collection end-to-end through `prepare()`, a single set→get round trip, an empty `bindDependencies` object, a manifest↔lib lock on the storage service name, and the stale-hook scenario. (Silent storage-failure logging stays out by design — graceful degradation is the contract; an optional logger dependency is a future MINOR.)
 
 ## [1.0.0] - 1405-08-08
 

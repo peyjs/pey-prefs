@@ -1,9 +1,9 @@
 // Wires the preference service into Bonyan's two-phase plugin lifecycle.
 
-import { createPrefsService } from './lib/prefs-service.js';
+import { createPrefsService, STORAGE_SERVICE_NAME } from './lib/prefs-service.js';
 
 const CORE_SERVICE_UNAVAILABLE_EVENT = 'core:service-unavailable';
-const REQUIRED_SERVICE_NAMES = ['pey.storage.service'];
+const REQUIRED_SERVICE_NAMES = [STORAGE_SERVICE_NAME];
 const PLUGIN_NAME = 'pey.prefs';
 const DEFAULT_COLLECTION = 'prefs';
 
@@ -37,18 +37,15 @@ export async function prepare(prepareContext) {
   teardown();
 
   const collection = prepareContext.config.collection;
-  lifecycleControls = createPrefsService({
+  const prefs = createPrefsService({
     collection: typeof collection === 'string' && collection.length > 0 ? collection : DEFAULT_COLLECTION,
   });
-  const prefs = lifecycleControls;
-
-  prepareContext.onDeactivated = () => teardown();
-  prepareContext.onShutdown = async () => teardown();
+  lifecycleControls = prefs;
 
   // Losing the required storage dependency after activation is a critical
   // error this plugin must report itself. The unsubscribe handle is kept so
   // the listener is removed again on shutdown/deactivation.
-  unsubscribeUnavailable = prepareContext.events.subscribe(CORE_SERVICE_UNAVAILABLE_EVENT, (event) => {
+  const unsubscribe = prepareContext.events.subscribe(CORE_SERVICE_UNAVAILABLE_EVENT, (event) => {
     const serviceName = event?.data?.serviceName;
     if (REQUIRED_SERVICE_NAMES.includes(serviceName)) {
       prepareContext.reportCriticalError({
@@ -60,6 +57,27 @@ export async function prepare(prepareContext) {
       });
     }
   });
+  unsubscribeUnavailable = unsubscribe;
+
+  // The hooks tear down THIS call's resources only: a stale hook left on an
+  // earlier context can never destroy a newer prepare()'s service and
+  // listener (it re-runs harmlessly on already-released resources).
+  let torn = false;
+  const teardownThisCall = () => {
+    prefs.deactivate();
+    if (!torn) {
+      torn = true;
+      unsubscribe();
+    }
+    if (lifecycleControls === prefs) {
+      lifecycleControls = null;
+    }
+    if (unsubscribeUnavailable === unsubscribe) {
+      unsubscribeUnavailable = null;
+    }
+  };
+  prepareContext.onDeactivated = () => teardownThisCall();
+  prepareContext.onShutdown = async () => teardownThisCall();
 
   return [{ name: 'pey.prefs.service', object: prefs.service }];
 }

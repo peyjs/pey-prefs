@@ -195,3 +195,28 @@ test('should_match_manifest_contract_when_loaded', async () => {
   assert.deepEqual(methodNames, ['get', 'set']);
   assert.deepEqual(manifest.events, []);
 });
+
+test('should_keep_the_new_service_healthy_when_a_stale_hook_from_a_previous_prepare_fires', async () => {
+  const first = createPrepareContext();
+  await prepare(first);
+
+  const second = createPrepareContext();
+  const secondRegistrations = await prepare(second);
+  await activate({ 'pey.storage.service': { read: async () => ({ key: 'theme', value: 'dark' }), write: async () => {} } });
+
+  // The host (or a test) invokes the OLD context's hook: it must be
+  // harmless to the NEW prepare()'s service and listener.
+  await first.onShutdown();
+
+  assert.equal(await secondRegistrations[0].object.get('theme'), 'dark', 'the new service must stay usable');
+  assert.equal(await secondRegistrations[0].object.set('theme', 'light'), true);
+  second.listeners['core:service-unavailable'][0]?.({
+    type: 'core:service-unavailable',
+    data: { serviceName: 'pey.storage.service' },
+  });
+  assert.notEqual(
+    second.published.find((entry) => entry.type === 'critical'),
+    undefined,
+    'the new listener must still be armed',
+  );
+});
