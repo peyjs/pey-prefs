@@ -74,7 +74,7 @@ test('should_return_defaults_when_dependencies_are_not_bound', async () => {
   assert.equal(await prefs.service.set('theme', 'dark'), false);
 });
 
-test('should_reject_after_deactivation', async () => {
+test('should_degrade_to_defaults_when_plugin_is_deactivated', async () => {
   const { service, deactivate } = createBoundPrefs(createFakeStorage());
 
   deactivate();
@@ -96,6 +96,36 @@ test('should_return_defaults_when_key_is_invalid', async () => {
 
   assert.equal(await service.get(''), null);
   assert.equal(await service.set('', 'x'), false);
+});
+
+test('should_return_defaults_when_key_is_not_a_string', async () => {
+  const { service } = createBoundPrefs(createFakeStorage());
+
+  assert.equal(await service.get(null), null);
+  assert.equal(await service.get(42), null);
+  assert.equal(await service.get(undefined), null);
+  assert.equal(await service.get({ id: 'theme' }), null);
+  assert.equal(await service.set(undefined, 'x'), false);
+  assert.equal(await service.set(42, 'x'), false);
+});
+
+test('should_read_back_written_value_when_set_precedes_get', async () => {
+  const storage = createFakeStorage();
+  const { service } = createBoundPrefs(storage);
+
+  const written = await service.set('font.size', 14);
+  const readBack = await service.get('font.size');
+
+  assert.equal(written, true);
+  assert.equal(readBack, 14);
+});
+
+test('should_return_defaults_when_bound_services_object_is_empty', async () => {
+  const prefs = createPrefsService({ collection: 'prefs' });
+  prefs.bindDependencies({});
+
+  assert.equal(await prefs.service.get('theme'), null);
+  assert.equal(await prefs.service.set('theme', 'dark'), false);
 });
 
 test('should_treat_record_without_value_field_as_missing', async () => {

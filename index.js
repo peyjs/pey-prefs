@@ -8,6 +8,22 @@ const PLUGIN_NAME = 'pey.prefs';
 const DEFAULT_COLLECTION = 'prefs';
 
 let lifecycleControls = null;
+let unsubscribeUnavailable = null;
+
+/**
+ * Releases this prepare() call's resources: the service goes unavailable and
+ * the core:service-unavailable listener leaves the Event Bus, so a lost-
+ * dependency event after shutdown can never report a critical error for a
+ * dead plugin.
+ */
+function teardown() {
+  lifecycleControls?.deactivate();
+  lifecycleControls = null;
+  if (unsubscribeUnavailable !== null) {
+    unsubscribeUnavailable();
+    unsubscribeUnavailable = null;
+  }
+}
 
 /**
  * Prepares the declared preference service.
@@ -16,19 +32,23 @@ let lifecycleControls = null;
  * @returns {Promise<Array<{name: string, object: object}>>} Declared service registrations.
  */
 export async function prepare(prepareContext) {
-  lifecycleControls = null;
+  // A repeated prepare() call must not leave the previous call's listener
+  // (and service) behind on the Event Bus.
+  teardown();
 
-  const prefs = createPrefsService({
-    collection: prepareContext.config.collection || DEFAULT_COLLECTION,
+  const collection = prepareContext.config.collection;
+  lifecycleControls = createPrefsService({
+    collection: typeof collection === 'string' && collection.length > 0 ? collection : DEFAULT_COLLECTION,
   });
-  lifecycleControls = prefs;
+  const prefs = lifecycleControls;
 
-  prepareContext.onDeactivated = () => prefs.deactivate();
-  prepareContext.onShutdown = async () => prefs.deactivate();
+  prepareContext.onDeactivated = () => teardown();
+  prepareContext.onShutdown = async () => teardown();
 
   // Losing the required storage dependency after activation is a critical
-  // error this plugin must report itself.
-  prepareContext.events.subscribe(CORE_SERVICE_UNAVAILABLE_EVENT, (event) => {
+  // error this plugin must report itself. The unsubscribe handle is kept so
+  // the listener is removed again on shutdown/deactivation.
+  unsubscribeUnavailable = prepareContext.events.subscribe(CORE_SERVICE_UNAVAILABLE_EVENT, (event) => {
     const serviceName = event?.data?.serviceName;
     if (REQUIRED_SERVICE_NAMES.includes(serviceName)) {
       prepareContext.reportCriticalError({
