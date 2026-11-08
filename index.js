@@ -1,6 +1,6 @@
 // Wires the preference service into Bonyan's two-phase plugin lifecycle.
 
-import { createPrefsService, STORAGE_SERVICE_NAME } from './lib/prefs-service.js';
+import { PREFS_SERVICE_NAME, STORAGE_SERVICE_NAME, createPrefsService } from './lib/prefs-service.js';
 
 const CORE_SERVICE_UNAVAILABLE_EVENT = 'core:service-unavailable';
 const REQUIRED_SERVICE_NAMES = [STORAGE_SERVICE_NAME];
@@ -79,7 +79,7 @@ export async function prepare(prepareContext) {
   prepareContext.onDeactivated = () => teardownThisCall();
   prepareContext.onShutdown = async () => teardownThisCall();
 
-  return [{ name: 'pey.prefs.service', object: prefs.service }];
+  return [{ name: PREFS_SERVICE_NAME, object: prefs.service }];
 }
 
 /**

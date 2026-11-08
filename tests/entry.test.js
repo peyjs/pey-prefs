@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { activate, prepare } from '../index.js';
-import { STORAGE_SERVICE_NAME } from '../lib/prefs-service.js';
+import { PREFS_SERVICE_NAME, STORAGE_SERVICE_NAME } from '../lib/prefs-service.js';
 
 const MANIFEST_PATH = new URL('../manifest.json', import.meta.url);
 const PACKAGE_PATH = new URL('../package.json', import.meta.url);
@@ -39,7 +39,7 @@ test('should_register_service_when_prepare_is_called', async () => {
   const registrations = await prepare(context);
 
   assert.equal(registrations.length, 1);
-  assert.equal(registrations[0].name, 'pey.prefs.service');
+  assert.equal(registrations[0].name, PREFS_SERVICE_NAME);
   assert.equal(typeof registrations[0].object.get, 'function');
   assert.equal(typeof registrations[0].object.set, 'function');
 });
@@ -159,6 +159,28 @@ test('should_use_default_collection_when_config_collection_is_not_a_string', asy
   assert.deepEqual(calls[0], ['write', 'prefs', { key: 'theme', value: 'dark' }]);
 });
 
+test('should_use_default_collection_when_config_collection_is_an_empty_string', async () => {
+  // The guard has two independent conditions (non-string, empty string);
+  // the requirement locks both, so the empty case gets its own test.
+  const context = createPrepareContext({ collection: '' });
+  const registrations = await prepare(context);
+  const calls = [];
+  const storage = {
+    read: async (collection, key) => {
+      calls.push(['read', collection, key]);
+      return null;
+    },
+    write: async (collection, record) => {
+      calls.push(['write', collection, record]);
+    },
+  };
+  await activate({ [STORAGE_SERVICE_NAME]: storage });
+
+  await registrations[0].object.set('theme', 'dark');
+
+  assert.deepEqual(calls[0], ['write', 'prefs', { key: 'theme', value: 'dark' }]);
+});
+
 test('should_not_report_critical_error_twice_when_prepare_is_called_again', async () => {
   const first = createPrepareContext();
   await prepare(first);
@@ -190,7 +212,7 @@ test('should_match_manifest_contract_when_loaded', async () => {
   assert.deepEqual(manifest.dependencies.required, [STORAGE_SERVICE_NAME]);
   assert.deepEqual(manifest.dependencies.optional, []);
   assert.equal(manifest.provides.length, 1);
-  assert.equal(manifest.provides[0].name, 'pey.prefs.service');
+  assert.equal(manifest.provides[0].name, PREFS_SERVICE_NAME);
   const methodNames = manifest.provides[0].methods.map((method) => method.name);
   assert.deepEqual(methodNames, ['get', 'set']);
   assert.deepEqual(manifest.events, []);
