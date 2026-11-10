@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { activate, prepare } from '../index.js';
-import { PREFS_SERVICE_NAME, STORAGE_SERVICE_NAME } from '../lib/prefs-service.js';
+import { PLUGIN_NAME, PREFS_SERVICE_NAME, STORAGE_SERVICE_NAME } from '../lib/prefs-service.js';
 
 const MANIFEST_PATH = new URL('../manifest.json', import.meta.url);
 const PACKAGE_PATH = new URL('../package.json', import.meta.url);
@@ -61,7 +61,7 @@ test('should_bind_storage_when_activate_is_called', async () => {
     read: async () => ({ key: 'theme', value: 'dark' }),
     write: async () => {},
   };
-  await activate({ 'pey.storage.service': storage });
+  await activate({ [STORAGE_SERVICE_NAME]: storage });
 
   const prefsService = registrations[0].object;
   assert.equal(await prefsService.get('theme'), 'dark');
@@ -74,12 +74,12 @@ test('should_report_critical_error_when_storage_dependency_is_lost', async () =>
 
   context.listeners['core:service-unavailable'][0]({
     type: 'core:service-unavailable',
-    data: { serviceName: 'pey.storage.service' },
+    data: { serviceName: STORAGE_SERVICE_NAME },
   });
 
   const criticalReport = context.published.find((entry) => entry.type === 'critical');
   assert.equal(criticalReport.data.code, 'REQUIRED_DEPENDENCY_LOST');
-  assert.equal(criticalReport.data.source, 'pey.prefs');
+  assert.equal(criticalReport.data.source, PLUGIN_NAME);
 });
 
 test('should_not_report_critical_error_when_unrelated_service_is_lost', async () => {
@@ -101,7 +101,7 @@ test('should_not_report_critical_error_when_dependency_is_lost_after_shutdown', 
   await context.onShutdown();
   context.listeners['core:service-unavailable'][0]?.({
     type: 'core:service-unavailable',
-    data: { serviceName: 'pey.storage.service' },
+    data: { serviceName: STORAGE_SERVICE_NAME },
   });
 
   assert.equal(context.published.find((entry) => entry.type === 'critical'), undefined);
@@ -111,7 +111,7 @@ test('should_not_report_critical_error_when_dependency_is_lost_after_shutdown', 
 test('should_deactivate_service_when_shutdown_hook_is_invoked', async () => {
   const context = createPrepareContext();
   const registrations = await prepare(context);
-  await activate({ 'pey.storage.service': { read: async () => ({ key: 'theme', value: 'dark' }), write: async () => {} } });
+  await activate({ [STORAGE_SERVICE_NAME]: { read: async () => ({ key: 'theme', value: 'dark' }), write: async () => {} } });
 
   await context.onShutdown();
 
@@ -132,7 +132,7 @@ test('should_use_configured_collection_when_prepare_receives_one', async () => {
       calls.push(['write', collection, record]);
     },
   };
-  await activate({ 'pey.storage.service': storage });
+  await activate({ [STORAGE_SERVICE_NAME]: storage });
 
   await registrations[0].object.set('theme', 'dark');
 
@@ -152,7 +152,7 @@ test('should_use_default_collection_when_config_collection_is_not_a_string', asy
       calls.push(['write', collection, record]);
     },
   };
-  await activate({ 'pey.storage.service': storage });
+  await activate({ [STORAGE_SERVICE_NAME]: storage });
 
   await registrations[0].object.set('theme', 'dark');
 
@@ -190,13 +190,13 @@ test('should_not_report_critical_error_twice_when_prepare_is_called_again', asyn
 
   first.listeners['core:service-unavailable'][0]?.({
     type: 'core:service-unavailable',
-    data: { serviceName: 'pey.storage.service' },
+    data: { serviceName: STORAGE_SERVICE_NAME },
   });
   assert.equal(first.published.find((entry) => entry.type === 'critical'), undefined, 'old listener must be gone');
 
   second.listeners['core:service-unavailable'][0]({
     type: 'core:service-unavailable',
-    data: { serviceName: 'pey.storage.service' },
+    data: { serviceName: STORAGE_SERVICE_NAME },
   });
   assert.notEqual(second.published.find((entry) => entry.type === 'critical'), undefined, 'new listener must work');
 });
@@ -205,7 +205,7 @@ test('should_match_manifest_contract_when_loaded', async () => {
   const manifest = JSON.parse(await readFile(MANIFEST_PATH, 'utf8'));
   const pkg = JSON.parse(await readFile(PACKAGE_PATH, 'utf8'));
 
-  assert.equal(manifest.name, 'pey.prefs');
+  assert.equal(manifest.name, PLUGIN_NAME);
   assert.equal(manifest.version, pkg.version);
   assert.equal(manifest.type, 'feature');
   assert.equal(manifest.adapterType, undefined);
@@ -224,7 +224,7 @@ test('should_keep_the_new_service_healthy_when_a_stale_hook_from_a_previous_prep
 
   const second = createPrepareContext();
   const secondRegistrations = await prepare(second);
-  await activate({ 'pey.storage.service': { read: async () => ({ key: 'theme', value: 'dark' }), write: async () => {} } });
+  await activate({ [STORAGE_SERVICE_NAME]: { read: async () => ({ key: 'theme', value: 'dark' }), write: async () => {} } });
 
   // The host (or a test) invokes the OLD context's hook: it must be
   // harmless to the NEW prepare()'s service and listener.
@@ -234,7 +234,7 @@ test('should_keep_the_new_service_healthy_when_a_stale_hook_from_a_previous_prep
   assert.equal(await secondRegistrations[0].object.set('theme', 'light'), true);
   second.listeners['core:service-unavailable'][0]?.({
     type: 'core:service-unavailable',
-    data: { serviceName: 'pey.storage.service' },
+    data: { serviceName: STORAGE_SERVICE_NAME },
   });
   assert.notEqual(
     second.published.find((entry) => entry.type === 'critical'),

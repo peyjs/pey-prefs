@@ -6,8 +6,15 @@ Review-fix releases (second and third pass) on top of the tagged 1.0.1; no servi
 
 - The `core:service-unavailable` subscription is released on shutdown/deactivation (and on a repeated `prepare()`), so a dependency-loss event after shutdown can no longer report a critical error for a dead plugin; the lifecycle hooks tear down their own prepare call's resources, so a stale hook from an earlier context can never destroy a newer instance.
 - `config.collection` is type-checked: a non-string **or empty-string** value falls back to the `prefs` default (the empty case now has its own test).
-- The provided service name is a shared constant too (`PREFS_SERVICE_NAME`), locking manifest ↔ entry point ↔ tests to one source, like the dependency name.
+- The provided service name is a shared constant too (`PREFS_SERVICE_NAME`), locking manifest ↔ entry point ↔ tests to one source, like the dependency name — and the plugin name joined them (`PLUGIN_NAME`), so the critical report's `source`, the manifest and the tests read one constant.
+- The tagged `[1.0.1]` entry is back in this file (it had been dropped in the restructure), so the changelog history matches the `v1.0.0 → v1.0.1 → v1.0.2` tag chain.
 - Test coverage gained: non-string keys, a real shutdown-hook invocation, the configured collection end-to-end through `prepare()`, a single set→get round trip, an empty `bindDependencies` object, manifest↔lib locks on both service names, and the stale-hook scenario (26 tests). (Silent storage-failure logging stays out by design — graceful degradation is the contract; an optional logger dependency is a future MINOR.)
+
+## [1.0.1] - 1405-08-15
+
+- Fixed a subscription leak: the `core:service-unavailable` unsubscribe handle is now kept and invoked on shutdown/deactivation (and on a repeated `prepare()`), so a dependency-loss event after shutdown can no longer report a critical error for a dead plugin.
+- `config.collection` is now type-checked: a non-string or empty value falls back to the `prefs` default instead of passing through unchecked.
+- Test coverage: non-string keys, a real shutdown-hook invocation, the configured collection end-to-end through `prepare()`, a single set→get round trip, an empty `bindDependencies` object, and a manifest↔lib lock on the storage service name; one test renamed to the standard `should_…_when_…` pattern.
 
 ## [1.0.0] - 1405-08-08
 

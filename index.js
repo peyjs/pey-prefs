@@ -1,10 +1,9 @@
 // Wires the preference service into Bonyan's two-phase plugin lifecycle.
 
-import { PREFS_SERVICE_NAME, STORAGE_SERVICE_NAME, createPrefsService } from './lib/prefs-service.js';
+import { PLUGIN_NAME, PREFS_SERVICE_NAME, STORAGE_SERVICE_NAME, createPrefsService } from './lib/prefs-service.js';
 
 const CORE_SERVICE_UNAVAILABLE_EVENT = 'core:service-unavailable';
 const REQUIRED_SERVICE_NAMES = [STORAGE_SERVICE_NAME];
-const PLUGIN_NAME = 'pey.prefs';
 const DEFAULT_COLLECTION = 'prefs';
 
 let lifecycleControls = null;

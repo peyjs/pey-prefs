@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createPrefsService } from '../lib/prefs-service.js';
+import { STORAGE_SERVICE_NAME, createPrefsService } from '../lib/prefs-service.js';
 
 function createFakeStorage(records = new Map(), { failReads = false, failWrites = false } = {}) {
   const calls = [];
@@ -27,7 +27,7 @@ function createFakeStorage(records = new Map(), { failReads = false, failWrites 
 
 function createBoundPrefs(storage, collection = 'prefs') {
   const prefs = createPrefsService({ collection });
-  prefs.bindDependencies({ 'pey.storage.service': storage });
+  prefs.bindDependencies({ [STORAGE_SERVICE_NAME]: storage });
   return prefs;
 }
 
