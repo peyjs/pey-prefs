@@ -7,21 +7,34 @@ const REQUIRED_SERVICE_NAMES = [STORAGE_SERVICE_NAME];
 const DEFAULT_COLLECTION = 'prefs';
 
 let lifecycleControls = null;
-let unsubscribeUnavailable = null;
+// The current call's subscription record: `{ unsubscribe, torn }` — the torn
+// flag lives on the record so EVERY release path marks it, and a stale hook
+// from an earlier context can never invoke the same unsubscribe handle
+// twice (the Event Bus contract does not promise idempotent unsubscribe).
+let subscription = null;
 
 /**
- * Releases this prepare() call's resources: the service goes unavailable and
- * the core:service-unavailable listener leaves the Event Bus, so a lost-
- * dependency event after shutdown can never report a critical error for a
- * dead plugin.
+ * Releases the current prepare() call's resources: the service goes
+ * unavailable and the core:service-unavailable listener leaves the Event
+ * Bus, so a lost-dependency event after shutdown can never report a
+ * critical error for a dead plugin.
  */
 function teardown() {
   lifecycleControls?.deactivate();
   lifecycleControls = null;
-  if (unsubscribeUnavailable !== null) {
-    unsubscribeUnavailable();
-    unsubscribeUnavailable = null;
+  releaseSubscription();
+}
+
+/**
+ * Unsubscribes exactly once per record, whoever releases it first.
+ * @returns {void}
+ */
+function releaseSubscription() {
+  if (subscription !== null && !subscription.torn) {
+    subscription.torn = true;
+    subscription.unsubscribe();
   }
+  subscription = null;
 }
 
 /**
@@ -56,23 +69,22 @@ export async function prepare(prepareContext) {
       });
     }
   });
-  unsubscribeUnavailable = unsubscribe;
+  subscription = { unsubscribe, torn: false };
 
   // The hooks tear down THIS call's resources only: a stale hook left on an
   // earlier context can never destroy a newer prepare()'s service and
-  // listener (it re-runs harmlessly on already-released resources).
-  let torn = false;
+  // listener — and the shared torn flag guarantees the same unsubscribe
+  // handle is invoked at most once, whichever path releases first.
+  const thisSubscription = subscription;
   const teardownThisCall = () => {
     prefs.deactivate();
-    if (!torn) {
-      torn = true;
-      unsubscribe();
+    if (subscription === thisSubscription) {
+      releaseSubscription();
+    } else if (!thisSubscription.torn) {
+      thisSubscription.torn = true;
     }
     if (lifecycleControls === prefs) {
       lifecycleControls = null;
-    }
-    if (unsubscribeUnavailable === unsubscribe) {
-      unsubscribeUnavailable = null;
     }
   };
   prepareContext.onDeactivated = () => teardownThisCall();

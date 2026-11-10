@@ -181,6 +181,30 @@ test('should_use_default_collection_when_config_collection_is_an_empty_string', 
   assert.deepEqual(calls[0], ['write', 'prefs', { key: 'theme', value: 'dark' }]);
 });
 
+test('should_invoke_the_stale_unsubscribe_handle_at_most_once_when_prepare_is_called_again', async () => {
+  // The torn flag lives on the shared subscription record: the prepare-start
+  // release marks it, so the stale hook left on the host's earlier context
+  // can never invoke the same handle twice (the Event Bus contract does not
+  // promise idempotent unsubscribe).
+  let unsubscribeCalls = 0;
+  const first = createPrepareContext();
+  first.events.subscribe = ((inner) => (type, handler) => {
+    const unsubscribe = inner(type, handler);
+    return () => {
+      unsubscribeCalls += 1;
+      unsubscribe();
+    };
+  })(first.events.subscribe.bind(first.events));
+  await prepare(first);
+
+  const second = createPrepareContext();
+  await prepare(second);
+
+  await first.onShutdown();
+
+  assert.equal(unsubscribeCalls, 1, 'the stale hook never re-invokes a released handle');
+});
+
 test('should_not_report_critical_error_twice_when_prepare_is_called_again', async () => {
   const first = createPrepareContext();
   await prepare(first);
