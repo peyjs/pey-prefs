@@ -75,13 +75,18 @@ export async function prepare(prepareContext) {
   // earlier context can never destroy a newer prepare()'s service and
   // listener — and the shared torn flag guarantees the same unsubscribe
   // handle is invoked at most once, whichever path releases first.
+  // INVARIANT this relies on: a non-current record is ALWAYS already torn
+  // — the record is replaced only through releaseSubscription(), which
+  // marks torn and unsubscribes before nulling, and prepare() has no await
+  // between subscription and hook assignment. A stale hook therefore never
+  // re-invokes a released handle, and there is no "mark torn without
+  // unsubscribing" branch that could permanently orphan a listener if the
+  // invariant were ever broken.
   const thisSubscription = subscription;
   const teardownThisCall = () => {
     prefs.deactivate();
     if (subscription === thisSubscription) {
       releaseSubscription();
-    } else if (!thisSubscription.torn) {
-      thisSubscription.torn = true;
     }
     if (lifecycleControls === prefs) {
       lifecycleControls = null;
