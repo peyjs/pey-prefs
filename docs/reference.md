@@ -11,7 +11,7 @@ Persists the host application's user UI preferences (currently theme and languag
 - `manifest.json` — plugin contract.
 - `index.js` — Bonyan two-phase entry point (`prepare`/`activate`) and the `core:service-unavailable` subscription.
 - `lib/prefs-service.js` — the preference service.
-- `tests/prefs-service.test.js`, `tests/entry.test.js` — unit tests.
+- `tests/prefs-service.test.js`, `tests/index.test.js` — unit tests.
 
 ## Dependencies
 
