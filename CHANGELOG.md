@@ -1,8 +1,6 @@
 # Changelog
 
-## [1.0.2] - 1405-08-19
-
-Review-fix releases (second through eighth pass, all unpublished) on top of the tagged 1.0.1; no service-contract change.
+## [1.0.2] - 1405-08-22
 
 - The `core:service-unavailable` subscription is released on shutdown/deactivation (and on a repeated `prepare()`), so a dependency-loss event after shutdown can no longer report a critical error for a dead plugin; the lifecycle hooks tear down their own prepare call's resources, so a stale hook from an earlier context can never destroy a newer instance.
 - `config.collection` is type-checked: a non-string **or empty-string** value falls back to the `prefs` default (the empty case now has its own test).
